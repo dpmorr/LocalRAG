@@ -12,129 +12,158 @@ LocalRAG is a **complete, production-ready starter template** for building Retri
 
 This is **not just a demo** - it's a foundational architecture you can fork and adapt to any domain: customer support, legal document analysis, medical research, internal knowledge bases, or any use case requiring AI with grounded, factual responses.
 
-## 🚀 Why LocalRAG? (vs Other AI Stacks)
+## Why LocalRAG?
 
-### Advantages Over LangChain/LlamaIndex Alone
+LocalRAG provides a complete RAG implementation rather than just libraries or APIs. This section compares it against common alternatives.
 
-| Feature | LocalRAG | LangChain/LlamaIndex Only |
-|---------|----------|---------------------------|
-| **Production Architecture** | ✅ Full microservices, auth, API | ❌ Library only, you build infrastructure |
-| **Document Processing** | ✅ Complete pipeline with workers | ⚠️ Basic, sync processing |
-| **Vector Database** | ✅ Production pgvector setup | ⚠️ You configure yourself |
-| **Hybrid Search** | ✅ Vector + BM25 out of the box | ⚠️ Usually vector only |
-| **Cost Control** | ✅ Local + cloud with metrics | ⚠️ Usually cloud APIs only |
-| **Observability** | ✅ Jaeger, Prometheus, Grafana | ❌ Not included |
-| **Authentication** | ✅ JWT, user management | ❌ Not included |
-| **Async Processing** | ✅ Celery workers, queues | ❌ Not included |
-| **Deployment Ready** | ✅ Docker Compose, scalable | ⚠️ You build it |
+### vs LangChain/LlamaIndex Alone
 
-**LocalRAG = LangChain + Full Production Stack**
+| Feature | LocalRAG | LangChain/LlamaIndex |
+|---------|----------|----------------------|
+| Production Architecture | Full microservices, auth, API | Library only, infrastructure not included |
+| Document Processing | Async pipeline with worker queues | Basic sync processing |
+| Vector Database | Production pgvector configuration | Manual setup required |
+| Hybrid Search | Vector + BM25 implemented | Typically vector only |
+| Cost Visibility | Local + cloud with metrics | Usually cloud API dependent |
+| Observability | Jaeger, Prometheus, Grafana | Not included |
+| Authentication | JWT, user management | Not included |
+| Async Processing | Celery workers, Redis queue | Not included |
+| Deployment | Docker Compose ready | Manual configuration |
 
-### Advantages Over Managed RAG Services (Pinecone, Weaviate Cloud)
+**Summary:** LocalRAG = RAG library + production infrastructure + deployment tooling
+
+### vs Managed RAG Services (Pinecone, Weaviate Cloud, etc.)
 
 | Aspect | LocalRAG | Managed Services |
 |--------|----------|------------------|
-| **Cost (1M vectors)** | ~$30/month (self-hosted) | $70-300/month + usage |
-| **Data Privacy** | ✅ Your infrastructure | ⚠️ Third-party hosted |
-| **Vendor Lock-in** | ✅ Portable (pgvector) | ❌ Locked to provider |
-| **Customization** | ✅ Full code access | ⚠️ Limited to API |
-| **Learning** | ✅ Understand internals | ❌ Black box |
-| **Latency** | ✅ Local = <10ms search | ⚠️ Network dependent |
+| Cost Model | Fixed infrastructure cost | Per-vector + per-query pricing |
+| Data Location | Your infrastructure | Vendor infrastructure |
+| Vendor Lock-in | Portable (standard PostgreSQL + pgvector) | Proprietary APIs |
+| Customization | Full source code access | API parameters only |
+| Transparency | Complete control over implementation | Black box |
+| Search Latency | Local network (<10ms typical) | Internet latency dependent |
 
-### Advantages Over OpenAI Assistants API
+### vs OpenAI Assistants API
 
 | Feature | LocalRAG | OpenAI Assistants |
 |---------|----------|-------------------|
-| **LLM Choice** | ✅ Any model (Llama, Qwen, etc.) | ❌ OpenAI only |
-| **Cost** | ~$30/month unlimited | $10-100+/month per usage |
-| **Privacy** | ✅ Data never leaves | ❌ Sent to OpenAI |
-| **Customization** | ✅ Full control of chunking, search | ⚠️ Limited parameters |
-| **Fine-tuning** | ✅ Bring your own embeddings | ⚠️ OpenAI models only |
-| **Response Speed** | ✅ Local GPU = <1s | ⚠️ API latency ~2-5s |
+| Model Selection | Any Ollama model or API provider | OpenAI models only |
+| Cost Structure | Fixed infrastructure | Per-token pricing |
+| Data Privacy | Remains on your infrastructure | Sent to OpenAI |
+| Customization | Full control over chunking, search, prompts | Limited API parameters |
+| Embedding Control | Use any embedding model | OpenAI embeddings only |
+| Response Latency | Local GPU: sub-second | API network latency: 2-5s typical |
 
-### Advantages Over RAG Frameworks (Haystack, txtai)
+### vs RAG Frameworks (Haystack, txtai)
 
-| Feature | LocalRAG | RAG Frameworks |
+| Feature | LocalRAG | Haystack/txtai |
 |---------|----------|----------------|
-| **Complete System** | ✅ API, DB, UI, workers | ⚠️ Backend only |
-| **Production Ready** | ✅ Auth, observability, scaling | ❌ You add these |
-| **UI Included** | ✅ Next.js frontend | ❌ Not included |
-| **Multi-tenancy** | ✅ User isolation built-in | ⚠️ You implement |
-| **Document Formats** | ✅ PDF, DOCX, web, custom | ✅ Similar |
-| **Deployment** | ✅ One-command Docker | ⚠️ Manual setup |
+| Scope | Complete system (API, DB, UI, workers) | Backend library only |
+| Production Features | Auth, observability, multi-tenancy | Manual implementation required |
+| User Interface | Next.js frontend ([frontend/](frontend/)) | Not included |
+| Multi-tenancy | User isolation built-in | Custom implementation |
+| Document Support | PDF, DOCX, TXT, web scraping | Similar |
+| Deployment | Single-command Docker Compose | Manual setup |
 
-## 💡 Key Benefits
+## Key Advantages
 
-### 1. **True Cost Control**
-```
-OpenAI GPT-4 API (heavy usage):
-- 100M tokens/month = $3,000-15,000
-- Embeddings: $1,300/month
-- Total: $4,300-16,300/month
+### Cost Control and Transparency
 
-LocalRAG (self-hosted):
-- GPU server: $900/month (or $30 for CPU)
-- Infrastructure: $100/month
-- Total: $130-1,000/month
-→ Save $3,200-15,200/month (75-95% cost reduction)
-```
+Self-hosted deployment provides:
+- Predictable infrastructure costs vs per-token API pricing
+- No vendor markup on LLM inference
+- Ability to run on existing hardware
+- Full visibility into resource usage and costs
 
-### 2. **Complete Privacy & Compliance**
-- ✅ **HIPAA compliant**: Medical records never leave your servers
-- ✅ **GDPR compliant**: User data stays in your region
-- ✅ **No third-party**: Zero risk of data leaks to API providers
-- ✅ **Audit trail**: Full control of who accesses what
+Example cost comparison (100M tokens/month):
+- Cloud API providers: 3,000-15,000 in token costs
+- Self-hosted GPU server: Fixed hosting cost (~1,000/month or less)
+- Self-hosted CPU server: Minimal incremental cost (~30-100/month)
 
-### 3. **Model Flexibility**
-```python
-# Switch models in seconds (no code changes)
-INFERENCE_MODEL=llama3.2:3b      # Fast, efficient
-INFERENCE_MODEL=qwen2.5:7b       # Better quality
-INFERENCE_MODEL=mistral:7b       # Alternative
-INFERENCE_MODEL=llama3.1:70b     # Best quality (needs GPU)
+### Privacy and Compliance
 
-# Or use cloud APIs as fallback
-OPENAI_API_KEY=sk-...            # OpenAI
-ANTHROPIC_API_KEY=sk-...         # Claude
-```
+- Data never leaves your infrastructure (unless explicitly configured to use external APIs)
+- Suitable for HIPAA, GDPR, and other regulatory requirements
+- Complete audit trail of all queries and data access
+- No third-party API dependencies for core functionality
 
-### 4. **Real Production Architecture**
-Not a toy example. Includes everything you need:
-- ✅ **Authentication**: JWT tokens, user management
-- ✅ **Multi-tenancy**: Isolated data per user
-- ✅ **Async processing**: Background workers for slow operations
-- ✅ **Caching**: Redis for fast repeated queries
-- ✅ **Monitoring**: Trace every request, measure costs
-- ✅ **Scaling**: Horizontal scaling ready
+### Model and Infrastructure Flexibility
 
-### 5. **Educational Value**
-Learn RAG from first principles:
-- See exactly how chunking works (not hidden in a framework)
-- Understand vector search performance tradeoffs
-- Measure retrieval accuracy with real metrics
-- Experiment with different search strategies
-- Build intuition for production RAG systems
-
-### 6. **Deployment Flexibility**
+Switch models without code changes:
 ```bash
-# Local development (CPU, no GPU)
-./start.sh cpu
-
-# Production (single GPU server)
-./start.sh gpu
-
-# Kubernetes (multi-region, auto-scaling)
-kubectl apply -f k8s/
-
-# Hybrid (local LLM + cloud infrastructure)
-# Use local Ollama with AWS RDS/ElastiCache
+INFERENCE_MODEL=llama3.2:3b      # 3B parameters, fast
+INFERENCE_MODEL=qwen2.5:7b       # 7B parameters, higher quality
+INFERENCE_MODEL=mistral:7b       # Alternative architecture
+INFERENCE_MODEL=llama3.1:70b     # Large model (requires GPU)
 ```
 
-### 7. **Future-Proof**
-- ✅ **Model agnostic**: Works with any OpenAI-compatible API
-- ✅ **Database agnostic**: Swap pgvector for Qdrant/Milvus
-- ✅ **Framework optional**: Use LangChain or build custom
-- ✅ **Cloud portable**: Deploy anywhere (AWS, GCP, Azure, on-prem)
+Or use cloud APIs as fallback:
+```bash
+OPENAI_API_KEY=sk-...            # OpenAI
+ANTHROPIC_API_KEY=sk-...         # Anthropic Claude
+```
+
+Infrastructure is similarly swappable:
+- Vector DB: pgvector, Qdrant, Milvus, Weaviate
+- Message queue: Redis, RabbitMQ, AWS SQS
+- Object storage: MinIO, S3, GCS, Azure Blob
+- Monitoring: Jaeger, Prometheus, or your existing stack
+
+### Production-Ready Architecture
+
+Includes components typically requiring weeks to implement:
+
+- **Authentication**: JWT token-based auth with user management
+- **Multi-tenancy**: User data isolation at database level
+- **Async Processing**: Celery workers for document ingestion
+- **Caching**: Redis for query results and embeddings
+- **Monitoring**: OpenTelemetry traces, Prometheus metrics
+- **API Documentation**: Auto-generated OpenAPI/Swagger
+- **Health Checks**: Service health endpoints for load balancers
+- **Horizontal Scaling**: Stateless services, shared data layer
+
+### Educational Foundation
+
+Understand RAG implementation details:
+- Document chunking strategies and their trade-offs
+- Vector search performance characteristics
+- Hybrid search (semantic + keyword) implementation
+- Embedding model selection and fine-tuning
+- Prompt engineering for retrieval-augmented generation
+- System observability and debugging
+
+Not a black box - every component is accessible and modifiable.
+
+### Deployment Options
+
+**Local development** (no GPU required):
+```bash
+./start.sh cpu
+```
+
+**Production** (single GPU server):
+```bash
+./start.sh gpu
+```
+
+**Kubernetes** (multi-region, auto-scaling):
+```bash
+kubectl apply -f k8s/
+```
+
+**Hybrid** (local LLM + managed infrastructure):
+- Run Ollama locally for inference
+- Use managed PostgreSQL (AWS RDS, Google Cloud SQL)
+- Use managed Redis (ElastiCache, MemoryStore)
+- Use cloud object storage (S3, GCS, Azure Blob)
+
+### Technology Independence
+
+- **Model agnostic**: Any OpenAI-compatible API endpoint
+- **Database agnostic**: PostgreSQL, but vector DBs are swappable
+- **Framework optional**: Use LangChain or implement directly
+- **Cloud portable**: No vendor-specific services required
+- **Local or hosted**: Run anywhere Docker runs
 
 ## 🎯 What You'll Learn
 
@@ -709,7 +738,7 @@ MIT License - free for commercial and personal use. See [LICENSE](LICENSE).
 - [MinIO](https://min.io/) - S3-compatible storage
 - [Jaeger](https://www.jaegertracing.io/) - Distributed tracing
 
-## ❓ FAQ
+## FAQ
 
 **Q: Do I need a GPU?**
 A: No. CPU mode works fine for learning and development. GPU recommended for production.
