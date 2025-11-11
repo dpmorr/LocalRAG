@@ -79,181 +79,16 @@ You don't need to use everything. Pick what you need:
 
 ### What Makes This Different
 
-### vs LangChain/LlamaIndex Alone
+| Comparison | LocalRAG | Alternative |
+|------------|----------|-------------|
+| **vs LangChain/LlamaIndex** | Complete production system (API, auth, workers, observability) | Libraries only - infrastructure not included |
+| **vs Managed Services** (Pinecone, Weaviate) | Fixed cost, data on your infrastructure, portable | Per-vector pricing, vendor lock-in, black box |
+| **vs OpenAI Assistants** | Any model, fixed cost, local privacy | OpenAI only, per-token pricing, data sent to OpenAI |
+| **vs RAG Frameworks** (Haystack, txtai) | Full stack with UI, auth, deployment | Backend library only, manual setup |
 
-| Feature | LocalRAG | LangChain/LlamaIndex |
-|---------|----------|----------------------|
-| Production Architecture | Full microservices, auth, API | Library only, infrastructure not included |
-| Document Processing | Async pipeline with worker queues | Basic sync processing |
-| Vector Database | Production pgvector configuration | Manual setup required |
-| Hybrid Search | Vector + BM25 implemented | Typically vector only |
-| Cost Visibility | Local + cloud with metrics | Usually cloud API dependent |
-| Observability | Jaeger, Prometheus, Grafana | Not included |
-| Authentication | JWT, user management | Not included |
-| Async Processing | Celery workers, Redis queue | Not included |
-| Deployment | Docker Compose ready | Manual configuration |
+**Key differentiator:** LocalRAG = RAG library + production infrastructure + deployment tooling in one package
 
-**Summary:** LocalRAG = RAG library + production infrastructure + deployment tooling
-
-### vs Managed RAG Services (Pinecone, Weaviate Cloud, etc.)
-
-| Aspect | LocalRAG | Managed Services |
-|--------|----------|------------------|
-| Cost Model | Fixed infrastructure cost | Per-vector + per-query pricing |
-| Data Location | Your infrastructure | Vendor infrastructure |
-| Vendor Lock-in | Portable (standard PostgreSQL + pgvector) | Proprietary APIs |
-| Customization | Full source code access | API parameters only |
-| Transparency | Complete control over implementation | Black box |
-| Search Latency | Local network (<10ms typical) | Internet latency dependent |
-
-### vs OpenAI Assistants API
-
-| Feature | LocalRAG | OpenAI Assistants |
-|---------|----------|-------------------|
-| Model Selection | Any Ollama model or API provider | OpenAI models only |
-| Cost Structure | Fixed infrastructure | Per-token pricing |
-| Data Privacy | Remains on your infrastructure | Sent to OpenAI |
-| Customization | Full control over chunking, search, prompts | Limited API parameters |
-| Embedding Control | Use any embedding model | OpenAI embeddings only |
-| Response Latency | Local GPU: sub-second | API network latency: 2-5s typical |
-
-### vs RAG Frameworks (Haystack, txtai)
-
-| Feature | LocalRAG | Haystack/txtai |
-|---------|----------|----------------|
-| Scope | Complete system (API, DB, UI, workers) | Backend library only |
-| Production Features | Auth, observability, multi-tenancy | Manual implementation required |
-| User Interface | Next.js frontend ([frontend/](frontend/)) | Not included |
-| Multi-tenancy | User isolation built-in | Custom implementation |
-| Document Support | PDF, DOCX, TXT, web scraping | Similar |
-| Deployment | Single-command Docker Compose | Manual setup |
-
-## Key Advantages
-
-### Cost Control and Transparency
-
-Self-hosted deployment provides:
-- Predictable infrastructure costs vs per-token API pricing
-- No vendor markup on LLM inference
-- Ability to run on existing hardware
-- Full visibility into resource usage and costs
-
-Example cost comparison (100M tokens/month):
-- Cloud API providers: 3,000-15,000 in token costs
-- Self-hosted GPU server: Fixed hosting cost (~1,000/month or less)
-- Self-hosted CPU server: Minimal incremental cost (~30-100/month)
-
-### Privacy and Compliance
-
-- Data never leaves your infrastructure (unless explicitly configured to use external APIs)
-- Suitable for HIPAA, GDPR, and other regulatory requirements
-- Complete audit trail of all queries and data access
-- No third-party API dependencies for core functionality
-
-### Model and Infrastructure Flexibility
-
-Switch models without code changes:
-```bash
-INFERENCE_MODEL=llama3.2:3b      # 3B parameters, fast
-INFERENCE_MODEL=qwen2.5:7b       # 7B parameters, higher quality
-INFERENCE_MODEL=mistral:7b       # Alternative architecture
-INFERENCE_MODEL=llama3.1:70b     # Large model (requires GPU)
-```
-
-Or use cloud APIs as fallback:
-```bash
-OPENAI_API_KEY=sk-...            # OpenAI
-ANTHROPIC_API_KEY=sk-...         # Anthropic Claude
-```
-
-Infrastructure is similarly swappable:
-- Vector DB: pgvector, Qdrant, Milvus, Weaviate
-- Message queue: Redis, RabbitMQ, AWS SQS
-- Object storage: MinIO, S3, GCS, Azure Blob
-- Monitoring: Jaeger, Prometheus, or your existing stack
-
-### Production-Ready Architecture
-
-Includes components typically requiring weeks to implement:
-
-- **Authentication**: JWT token-based auth with user management
-- **Multi-tenancy**: User data isolation at database level
-- **Async Processing**: Celery workers for document ingestion
-- **Caching**: Redis for query results and embeddings
-- **Monitoring**: OpenTelemetry traces, Prometheus metrics
-- **API Documentation**: Auto-generated OpenAPI/Swagger
-- **Health Checks**: Service health endpoints for load balancers
-- **Horizontal Scaling**: Stateless services, shared data layer
-
-### Educational Foundation
-
-Understand RAG implementation details:
-- Document chunking strategies and their trade-offs
-- Vector search performance characteristics
-- Hybrid search (semantic + keyword) implementation
-- Embedding model selection and fine-tuning
-- Prompt engineering for retrieval-augmented generation
-- System observability and debugging
-
-Not a black box - every component is accessible and modifiable.
-
-### Deployment Options
-
-**Local development** (no GPU required):
-```bash
-./start.sh cpu
-```
-
-**Production** (single GPU server):
-```bash
-./start.sh gpu
-```
-
-**Kubernetes** (multi-region, auto-scaling):
-```bash
-kubectl apply -f k8s/
-```
-
-**Hybrid** (local LLM + managed infrastructure):
-- Run Ollama locally for inference
-- Use managed PostgreSQL (AWS RDS, Google Cloud SQL)
-- Use managed Redis (ElastiCache, MemoryStore)
-- Use cloud object storage (S3, GCS, Azure Blob)
-
-### Technology Independence
-
-- **Model agnostic**: Any OpenAI-compatible API endpoint
-- **Database agnostic**: PostgreSQL, but vector DBs are swappable
-- **Framework optional**: Use LangChain or implement directly
-- **Cloud portable**: No vendor-specific services required
-- **Local or hosted**: Run anywhere Docker runs
-
-## 🎯 What You'll Learn
-
-### Core RAG Concepts
-- **Document ingestion pipeline**: Multi-format processing (PDF, DOCX, TXT, Markdown, web scraping)
-- **Intelligent chunking**: Context-preserving document segmentation with configurable overlap
-- **Hybrid search**: Combining semantic (vector) + keyword (BM25) search for better retrieval
-- **Vector embeddings**: Local embedding generation with any model
-- **Prompt engineering**: Building effective prompts with retrieved context
-- **Citation tracking**: Source attribution for AI responses
-
-### Production Infrastructure
-- **Microservices architecture**: Separation of concerns for scalability
-- **Local LLM serving**: Ollama integration with OpenAI-compatible API
-- **Vector database**: pgvector for similarity search at scale
-- **Message queue**: Async document processing with Celery + Redis
-- **Observability**: OpenTelemetry, Jaeger, Prometheus integration
-- **Cost control**: Run everything locally or swap to cloud APIs
-
-### Why This Matters
-- **Zero vendor lock-in**: Switch between Ollama, OpenAI, Anthropic, or any LLM
-- **Privacy control**: Keep sensitive data local or deploy to your infrastructure
-- **Cost transparency**: Measure exactly what you're spending on inference
-- **Learning foundation**: Understand RAG internals before using frameworks
-- **Production ready**: Real database, auth, API design, not toy examples
-
-## 🏗️ Architecture Deep Dive
+## Architecture
 
 ### System Components
 
@@ -350,7 +185,7 @@ User Question
 User sees answer + sources
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -395,7 +230,7 @@ docker logs localrag-inference-cpu -f
 - Email: `admin@example.com`
 - Password: `admin123`
 
-## 📦 What's Included
+## What's Included
 
 ### Core Services
 
@@ -418,7 +253,7 @@ docker logs localrag-inference-cpu -f
 | **Prometheus** | Metrics collection | Monitor performance, cost per query |
 | **Grafana** | Visualization | Custom dashboards for RAG metrics |
 
-## 🔧 Configuration & Customization
+## Configuration
 
 ### Environment Variables
 
@@ -492,7 +327,7 @@ def chunk_by_headers(text: str):
     # Split on markdown headers, preserve hierarchy
 ```
 
-## 📚 Deployment Profiles
+## Deployment Profiles
 
 ### 1. CPU Mode (Default - No GPU Required)
 
@@ -542,7 +377,7 @@ docker-compose -f docker-compose.simple.yml --profile full up -d
 - Performance optimization
 - Production monitoring
 
-## 🧪 Using the System
+## Using the System
 
 ### Upload Documents (Build Knowledge Base)
 
@@ -604,36 +439,17 @@ curl -X POST http://localhost:8080/chat \
 }
 ```
 
-## 💡 Real-World Use Cases
+## Real-World Use Cases
 
-### 1. Customer Support Knowledgebase
-- Upload: Support docs, FAQs, troubleshooting guides
-- Use case: AI assistant for support agents
-- Benefit: Consistent, cited answers
+- **Customer Support**: Support docs, FAQs → consistent, cited answers for agents
+- **Legal Research**: Contracts, case law → find relevant precedents quickly
+- **Internal Wiki**: Policies, procedures → reduce HR/IT support load
+- **Academic Research**: Papers, textbooks → synthesize information across sources
+- **Medical Documentation**: Clinical guidelines → evidence-based recommendations
 
-### 2. Legal Document Analysis
-- Upload: Contracts, case law, regulations
-- Use case: Legal research assistant
-- Benefit: Find relevant precedents quickly
+The included "Career Mentor" is one example - the architecture works for any domain.
 
-### 3. Internal Company Wiki
-- Upload: Policies, procedures, onboarding docs
-- Use case: Employee self-service
-- Benefit: Reduce HR/IT support load
-
-### 4. Academic Research
-- Upload: Papers, textbooks, lecture notes
-- Use case: Study assistant
-- Benefit: Synthesize information across sources
-
-### 5. Medical Documentation
-- Upload: Clinical guidelines, research papers
-- Use case: Clinical decision support
-- Benefit: Evidence-based recommendations
-
-**The included "Career Mentor" is just one example** - the architecture works for any domain.
-
-## 🎓 Learning Path
+## Learning Path
 
 ### Beginner: Understand the Basics
 1. Deploy with `start.bat cpu`
@@ -656,7 +472,7 @@ curl -X POST http://localhost:8080/chat \
 4. Add custom evaluation metrics
 5. Deploy to Kubernetes with autoscaling
 
-## 🔬 Fine-Tuning & Customization
+## Fine-Tuning & Customization
 
 ### Why This is a Great Fine-Tuning Starter
 
@@ -701,7 +517,7 @@ model.fit(train_data)
 # Update embedder.py to use your model
 ```
 
-## 📊 Performance & Scaling
+## Performance & Scaling
 
 ### Single Server Limits
 - **CPU mode**: 10-50 concurrent users, 2-5s response time
@@ -741,7 +557,7 @@ docker-compose up --scale worker=5
 - Anthropic Claude (1M tokens): ~$15-75
 - Heavy usage (100M tokens/month): **$1,500-7,500/month**
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 ### Data Privacy
 - **Local-first**: Documents never leave your infrastructure (unless you configure external APIs)
@@ -762,7 +578,7 @@ docker-compose up --scale worker=5
 ✅ `.env.example`, code, configs with env var substitution
 ❌ `.env`, API keys, database backups, user data
 
-## 🤝 Contributing
+## Contributing
 
 This is a **learning resource and starter template**. Contributions welcome:
 
@@ -774,11 +590,11 @@ This is a **learning resource and starter template**. Contributions welcome:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📝 License
+## License
 
 MIT License - free for commercial and personal use. See [LICENSE](LICENSE).
 
-## 🙏 Built With
+## Built With
 
 **Core RAG Stack:**
 - [Ollama](https://ollama.ai/) - Local LLM runtime
