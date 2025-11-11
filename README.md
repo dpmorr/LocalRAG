@@ -14,7 +14,70 @@ This is **not just a demo** - it's a foundational architecture you can fork and 
 
 ## Why LocalRAG?
 
-LocalRAG provides a complete RAG implementation rather than just libraries or APIs. This section compares it against common alternatives.
+### The Unique Approach
+
+LocalRAG demonstrates **production RAG architecture patterns** that work regardless of your tech stack. The key differentiators are:
+
+**1. Hybrid Search Architecture**
+- Combines vector similarity (semantic) with BM25 (keyword) search
+- Configurable weighting between the two approaches
+- Addresses the "lexical gap" problem where pure vector search fails on exact terms
+- See implementation: [`services/knowledge/services/search.py`](services/knowledge/services/search.py)
+
+**2. Intelligent Document Processing Pipeline**
+- Async worker-based architecture separates ingestion from serving
+- Configurable chunking strategies (fixed-size, sentence-aware, section-based)
+- Preserves context across chunk boundaries with overlap
+- Batch embedding generation with caching
+- See implementation: [`services/knowledge/services/chunker.py`](services/knowledge/services/chunker.py)
+
+**3. Model and Provider Agnostic**
+- OpenAI-compatible API interface means swap any provider
+- Local Ollama, OpenAI, Anthropic, or your own hosted models
+- Same codebase works with 3B parameter models or 70B+
+- Embedding models are similarly swappable
+- No vendor lock-in at any layer
+
+**4. Observable and Measurable**
+- Every request traced through the full pipeline
+- Measure retrieval quality (precision@k, recall@k)
+- Track inference costs per query
+- A/B test chunking strategies or models
+- See: Jaeger traces, Prometheus metrics
+
+**5. Separation of Concerns**
+- Knowledge Service: Document processing + search (plug into your existing API)
+- Inference Service: LLM + embeddings (swap for your provider)
+- API Service: Orchestration (integrate with your auth system)
+- Workers: Async processing (scale independently)
+
+Each service is independently deployable and replaceable.
+
+### How to Integrate With Your Stack
+
+You don't need to use everything. Pick what you need:
+
+**Just need document processing?**
+- Use Knowledge Service standalone
+- Provides `/parse`, `/chunk`, `/embed`, `/search` endpoints
+- Plug into your existing application
+
+**Just need hybrid search?**
+- Reuse the search implementation
+- Works with any pgvector database
+- Combine with your existing vector embeddings
+
+**Just need Ollama integration?**
+- Use the Inference Service setup
+- OpenAI-compatible API for any client
+- Includes model management and GPU optimization
+
+**Need reference architecture?**
+- Study the service boundaries and communication patterns
+- Apply microservices design to your RAG system
+- Adapt observability setup to your monitoring stack
+
+### What Makes This Different
 
 ### vs LangChain/LlamaIndex Alone
 
