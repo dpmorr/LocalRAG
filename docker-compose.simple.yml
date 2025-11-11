@@ -1,0 +1,394 @@
+# Simplified Docker Compose - 4 Core Services
+# Use for both development and small-scale production
+
+services:
+  # ==================== Infrastructure ====================
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: career-mentor-db
+    environment:
+      POSTGRES_USER: career_mentor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password}
+      POSTGRES_DB: career_mentor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U career_mentor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: career-mentor-redis
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: career-mentor-storage
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-career_mentor}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-dev_password}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ==================== Observability (Optional) ====================
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: career-mentor-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    restart: unless-stopped
+    profiles: ["observability", "full"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: career-mentor-prometheus
+    volumes:
+      - ./infrastructure/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    profiles: ["observability", "full"]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: career-mentor-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles: ["observability", "full"]
+
+  # ==================== Core Services ====================
+
+  # 1. API Service (Main business logic)
+  api-service:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: career-mentor-api
+    ports:
+      - "8080:8080"
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://career_mentor:${POSTGRES_PASSWORD:-dev_password}@postgres:5432/career_mentor
+      - DATABASE_POOL_SIZE=20
+
+      # Redis
+      - REDIS_URL=redis://redis:6379
+
+      # S3/MinIO
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_USER:-career_mentor}
+      - S3_SECRET_KEY=${MINIO_PASSWORD:-dev_password}
+
+      # Service URLs
+      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:8081
+      - INFERENCE_SERVICE_URL=http://inference-service:8000
+
+      # Auth
+      - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_in_prod}
+      - JWT_EXPIRATION_MINUTES=60
+
+      # LangSmith (optional)
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-career-mentor-dev}
+
+      # Observability
+      - OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # Feature flags
+      - ENABLE_WEB_RETRIEVAL=true
+      - ALLOWED_WEB_DOMAINS=wikipedia.org,arxiv.org,github.com,stackoverflow.com
+
+      # External APIs (fallback LLMs)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./services/api:/app
+      - api_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 2. Knowledge Service (Document processing + retrieval)
+  knowledge-service:
+    build:
+      context: ./services/knowledge
+      dockerfile: Dockerfile
+    container_name: career-mentor-knowledge
+    ports:
+      - "8081:8081"
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://career_mentor:${POSTGRES_PASSWORD:-dev_password}@postgres:5432/career_mentor
+
+      # Redis
+      - REDIS_URL=redis://redis:6379
+
+      # S3/MinIO
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_USER:-career_mentor}
+      - S3_SECRET_KEY=${MINIO_PASSWORD:-dev_password}
+
+      # Inference service for embeddings
+      - INFERENCE_SERVICE_URL=http://inference-service:8000
+
+      # Retrieval config
+      - RETRIEVAL_TOP_K=50
+      - RERANK_TOP_K=10
+      - BM25_WEIGHT=0.5
+      - CHUNK_SIZE=512
+      - CHUNK_OVERLAP=64
+
+      # Observability
+      - OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./services/knowledge:/app
+      - knowledge_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 3. Inference Service (GPU-accelerated LLM + embeddings)
+  inference-service:
+    image: vllm/vllm-openai:latest
+    container_name: career-mentor-inference
+    ports:
+      - "8000:8000"
+    environment:
+      # Model configuration
+      - MODEL=${INFERENCE_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      - TENSOR_PARALLEL_SIZE=${TENSOR_PARALLEL_SIZE:-1}
+      - GPU_MEMORY_UTILIZATION=${GPU_MEMORY_UTILIZATION:-0.9}
+      - MAX_MODEL_LEN=${MAX_MODEL_LEN:-32768}
+      - DTYPE=auto
+
+      # API settings
+      - SERVED_MODEL_NAME=main
+      - HOST=0.0.0.0
+      - PORT=8000
+
+    command: >
+      --model ${INFERENCE_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      --served-model-name main
+      --host 0.0.0.0
+      --port 8000
+      --max-model-len ${MAX_MODEL_LEN:-32768}
+      --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.9}
+      --trust-remote-code
+    volumes:
+      - inference_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${GPU_COUNT:-1}
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/models"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 300s  # Model download can take time
+    restart: unless-stopped
+    profiles: ["gpu", "full"]
+
+  # 3b. Inference Service (CPU - Ollama)
+  inference-service-cpu:
+    image: ollama/ollama:latest
+    container_name: career-mentor-inference-cpu
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    profiles: ["cpu", "default"]
+
+  # 3c. Ollama OpenAI Proxy (provides OpenAI-compatible API on port 8000)
+  ollama-proxy:
+    image: python:3.11-slim
+    container_name: career-mentor-ollama-proxy
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=http://inference-service-cpu:11434
+      - MODEL_NAME=${INFERENCE_MODEL:-llama3.2:3b}
+    command: >
+      sh -c "pip install --quiet 'litellm[proxy]' &&
+             litellm --model ollama_chat/${INFERENCE_MODEL:-llama3.2:3b} --host 0.0.0.0 --port 8000 --api_base http://inference-service-cpu:11434"
+    depends_on:
+      inference-service-cpu:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    profiles: ["cpu", "default"]
+
+  # 4. Worker Service (Background tasks)
+  worker:
+    build:
+      context: ./services/workers
+      dockerfile: Dockerfile
+    container_name: career-mentor-worker
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://career_mentor:${POSTGRES_PASSWORD:-dev_password}@postgres:5432/career_mentor
+
+      # Redis (Celery broker)
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+      # S3/MinIO
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_USER:-career_mentor}
+      - S3_SECRET_KEY=${MINIO_PASSWORD:-dev_password}
+
+      # Service URLs
+      - INFERENCE_SERVICE_URL=http://inference-service:8000
+      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:8081
+
+      # Observability
+      - OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./services/workers:/app
+      - worker_cache:/app/.cache
+    command: celery -A tasks worker --loglevel=info --concurrency=${WORKER_CONCURRENCY:-4}
+    restart: unless-stopped
+
+  # ==================== Frontend ====================
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: ${FRONTEND_TARGET:-development}
+    container_name: career-mentor-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8080
+      - NODE_ENV=${NODE_ENV:-development}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: ${FRONTEND_COMMAND:-npm run dev}
+    depends_on:
+      - api-service
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: career-mentor-postgres
+  redis_data:
+    name: career-mentor-redis
+  minio_data:
+    name: career-mentor-minio
+  inference_cache:
+    name: career-mentor-inference-cache
+  ollama_data:
+    name: career-mentor-ollama
+  api_cache:
+    name: career-mentor-api-cache
+  knowledge_cache:
+    name: career-mentor-knowledge-cache
+  worker_cache:
+    name: career-mentor-worker-cache
+  prometheus_data:
+    name: career-mentor-prometheus
+  grafana_data:
+    name: career-mentor-grafana
+
+networks:
+  default:
+    name: career-mentor-network
+    driver: bridge

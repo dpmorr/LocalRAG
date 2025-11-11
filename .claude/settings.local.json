@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker logs:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker cp:*)",
+      "Bash(curl -X POST http://localhost:8080/auth/login -H \"Content-Type: application/x-www-form-urlencoded\" -d \"username=admin@careermentor.com&password=admin123\")",
+      "Bash(curl:*)",
+      "Bash(docker:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,444 @@
+# Development Environment - Docker Compose
+# Use for local development only. Production uses EKS.
+
+version: '3.9'
+
+services:
+  # ==================== Infrastructure ====================
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_USER: career_mentor
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: career_mentor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-EXEC", "pg_isready -U career_mentor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: career_mentor
+      RABBITMQ_DEFAULT_PASS: dev_password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: career_mentor
+      MINIO_ROOT_PASSWORD: dev_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== Observability ====================
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+  # ==================== Core Services ====================
+
+  gateway-service:
+    build:
+      context: ./services/gateway-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - CHAT_SERVICE_URL=http://chat-orchestrator-service:8082
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev_jwt_secret_change_in_prod
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  chat-orchestrator-service:
+    build:
+      context: ./services/chat-orchestrator-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://career_mentor:dev_password@rabbitmq:5672
+      - PROFILE_SERVICE_URL=http://profile-service:8090
+      - VECTOR_STORE_SERVICE_URL=http://vector-store-service:8085
+      - INFERENCE_SERVICE_URL=http://inference-service:8086
+      - CV_SERVICE_URL=http://cv-service:8087
+      - PLAN_SERVICE_URL=http://plan-service:8088
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  ingestion-service:
+    build:
+      context: ./services/ingestion-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://career_mentor:dev_password@rabbitmq:5672
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=career_mentor
+      - S3_SECRET_KEY=dev_password
+      - EMBEDDING_SERVICE_URL=http://embedding-service:8084
+      - VECTOR_STORE_SERVICE_URL=http://vector-store-service:8085
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./temp_uploads:/tmp/uploads
+
+  embedding-service:
+    build:
+      context: ./services/embedding-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - MODEL_NAME=BAAI/bge-m3
+      - TENSOR_PARALLEL_SIZE=1
+      - GPU_MEMORY_UTILIZATION=0.9
+      - MAX_MODEL_LEN=8192
+      - OTLP_ENDPOINT=http://jaeger:4317
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  vector-store-service:
+    build:
+      context: ./services/vector-store-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  inference-service:
+    build:
+      context: ./services/inference-service
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      - MODEL_NAME=Qwen/Qwen2.5-14B-Instruct
+      - TENSOR_PARALLEL_SIZE=1
+      - GPU_MEMORY_UTILIZATION=0.9
+      - MAX_MODEL_LEN=32768
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - OTLP_ENDPOINT=http://jaeger:4317
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cv-service:
+    build:
+      context: ./services/cv-service
+      dockerfile: Dockerfile
+    ports:
+      - "8087:8087"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=career_mentor
+      - S3_SECRET_KEY=dev_password
+      - INFERENCE_SERVICE_URL=http://inference-service:8086
+      - RENDER_SERVICE_URL=http://render-service:8089
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  plan-service:
+    build:
+      context: ./services/plan-service
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - INFERENCE_SERVICE_URL=http://inference-service:8086
+      - VECTOR_STORE_SERVICE_URL=http://vector-store-service:8085
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  render-service:
+    build:
+      context: ./services/render-service
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=career_mentor
+      - S3_SECRET_KEY=dev_password
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  profile-service:
+    build:
+      context: ./services/profile-service
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web-retrieval-service:
+    build:
+      context: ./services/web-retrieval-service
+      dockerfile: Dockerfile
+    ports:
+      - "8091:8091"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=career_mentor
+      - S3_SECRET_KEY=dev_password
+      - ALLOWED_DOMAINS=wikipedia.org,arxiv.org,github.com,stackoverflow.com
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8092:8092"
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://career_mentor:dev_password@rabbitmq:5672
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # ==================== Background Workers ====================
+
+  ingestion-worker:
+    build:
+      context: ./workers/ingestion-workers
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://career_mentor:dev_password@rabbitmq:5672
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=career_mentor
+      - S3_SECRET_KEY=dev_password
+      - EMBEDDING_SERVICE_URL=http://embedding-service:8084
+      - VECTOR_STORE_SERVICE_URL=http://vector-store-service:8085
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: celery -A tasks worker --loglevel=info --concurrency=4
+
+  memory-worker:
+    build:
+      context: ./workers/memory-worker
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://career_mentor:dev_password@postgres:5432/career_mentor
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://career_mentor:dev_password@rabbitmq:5672
+      - INFERENCE_SERVICE_URL=http://inference-service:8086
+      - PROFILE_SERVICE_URL=http://profile-service:8090
+      - OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: celery -A tasks worker --loglevel=info --concurrency=2
+
+  # ==================== Frontend ====================
+
+  frontend-web:
+    build:
+      context: ./frontend/web
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_GATEWAY_URL=http://localhost:8080
+      - NEXT_PUBLIC_WS_GATEWAY_URL=ws://localhost:8080
+    volumes:
+      - ./frontend/web:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: career-mentor-network
