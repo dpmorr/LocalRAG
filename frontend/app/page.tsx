@@ -129,439 +129,589 @@ export default function Home() {
     />
   }
 
-  return <LandingPage onGetStarted={() => setShowChat(true)} onLogin={() => setShowAuth(true)} isLoggedIn={isLoggedIn} message={message} setMessage={setMessage} particles={particles} />
+  return <LandingPage onGetStarted={() => setShowChat(true)} onLogin={() => setShowAuth(true)} isLoggedIn={isLoggedIn} />
 }
 
 // Landing Page Component
-function LandingPage({ onGetStarted, onLogin, isLoggedIn, message, setMessage, particles }: any) {
-  const handlePromptSubmit = () => {
-    if (message.trim()) {
-      onGetStarted()
-    }
-  }
+function LandingPage({ onGetStarted, onLogin, isLoggedIn }: any) {
+  const [selectedPivot, setSelectedPivot] = useState<string | null>(null)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 overflow-hidden">
-      {/* Animated background shapes */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl"
-          animate={{
-            x: [0, 50, 0],
-            y: [0, 30, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-blue-300/30 rounded-full blur-3xl"
-          animate={{
-            x: [0, -30, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-80 h-80 bg-pink-300/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, -40, 0],
-            y: [0, -40, 0],
-            scale: [1, 1.15, 1],
-          }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        />
+    <div className="min-h-screen bg-white dark:bg-gray-950 relative overflow-hidden transition-colors duration-700">
+      {/* Animated Mesh Gradient Background */}
+      <div className="absolute inset-0 opacity-70 transition-opacity duration-700">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+          <defs>
+            <radialGradient id="meshGradient1" cx="20%" cy="20%" r="80%" fx="20%" fy="20%">
+              <stop offset="0%" stopColor="#7148D4" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#7148D4" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="meshGradient2" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
+              <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="meshGradient3" cx="80%" cy="80%" r="60%" fx="80%" fy="80%">
+              <stop offset="0%" stopColor="#FF4d4d" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#FF4d4d" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="meshGradient4" cx="10%" cy="90%" r="70%" fx="10%" fy="90%">
+              <stop offset="0%" stopColor="#FFB800" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#FFB800" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#meshGradient1)" />
+          <rect width="100%" height="100%" fill="url(#meshGradient2)" />
+          <rect width="100%" height="100%" fill="url(#meshGradient3)" />
+          <rect width="100%" height="100%" fill="url(#meshGradient4)" />
+          <rect width="100%" height="100%" fill="white" opacity="0.85" className="transition-opacity duration-700" />
+        </svg>
       </div>
+
+      {/* Noise Texture Overlay */}
+      <div className="fixed inset-0 z-10 pointer-events-none opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]" />
 
       {/* Header */}
       <motion.header
-        className="relative z-10 container mx-auto px-6 py-6"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        className="fixed top-0 left-0 right-0 z-40 px-8 py-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
           <motion.div
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
+            className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent"
+            style={{ fontFamily: 'Poppins, system-ui, sans-serif' }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Career Mentor
-            </span>
+            Pivotr
           </motion.div>
-          {!isLoggedIn && (
-            <motion.button
-              onClick={onLogin}
-              className="px-6 py-2.5 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-800 font-medium rounded-full shadow-lg hover:shadow-xl transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Sign In
-            </motion.button>
-          )}
+          <motion.button
+            onClick={onGetStarted}
+            className="relative group bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-all duration-300 text-sm px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="relative z-10">Get Started</span>
+          </motion.button>
         </div>
       </motion.header>
 
       {/* Hero Section */}
-      <div className="relative z-10 container mx-auto px-6 py-12 md:py-20">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            className="inline-block mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="px-4 py-2 bg-gradient-to-r from-purple-600/10 to-blue-600/10 border border-purple-600/20 rounded-full text-purple-700 font-medium text-sm">
-              ✨ Backed by Senior Recruiters & Career Experts
-            </span>
-          </motion.div>
-
-          <motion.h1
-            className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent leading-tight"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            Your Personal Career Guide
-          </motion.h1>
-
-          <motion.p
-            className="text-xl md:text-2xl text-gray-700 mb-8 leading-relaxed max-w-3xl mx-auto"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            Get personalized career advice, skill recommendations, and job search strategies powered by insights from leading recruiters
-          </motion.p>
-
-          {/* Interactive Prompt Box */}
-          <motion.div
-            className="max-w-3xl mx-auto mb-6"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-          >
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-white/50">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ask me anything: 'How do I become a software engineer?' or 'Review my resume'..."
-                  className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 rounded-xl px-6 py-4 outline-none text-lg"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handlePromptSubmit()}
-                />
-                <motion.button
-                  onClick={handlePromptSubmit}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold px-8 py-4 rounded-xl transition-all shadow-lg flex items-center gap-2"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                  Start
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="flex flex-wrap justify-center gap-3 text-sm text-gray-600"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-          >
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              No credit card required
-            </span>
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Free to start
-            </span>
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Cancel anytime
-            </span>
-          </motion.div>
+      <main className="flex-1 flex items-center justify-center px-8 py-32 min-h-screen relative z-20 pt-32">
+        {/* Hero Background Effects */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-white/75 backdrop-blur-sm z-10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent" />
+          <div className="absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-gradient-to-br from-purple-500/35 to-pink-500/35 blur-3xl opacity-70" />
+          <div className="absolute bottom-[-9rem] left-[-6rem] w-[30rem] h-[30rem] rounded-full bg-gradient-to-tr from-pink-500/30 to-amber-300/25 blur-3xl opacity-60" />
         </div>
 
-        {/* Feature Cards */}
-        <motion.div
-          className="grid md:grid-cols-3 gap-6 mt-20 max-w-6xl mx-auto"
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
-          {[
-            {
-              icon: (
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              ),
-              title: 'Personalized Guidance',
-              desc: 'Get tailored career advice based on your unique background, skills, and goals',
-              color: 'from-purple-500 to-purple-600'
-            },
-            {
-              icon: (
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-              ),
-              title: 'Skill Development',
-              desc: 'Discover the skills you need and get personalized learning paths to build them',
-              color: 'from-blue-500 to-blue-600'
-            },
-            {
-              icon: (
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              ),
-              title: 'Job Search Support',
-              desc: 'Navigate the job market with insights from senior recruiters, resume reviews, and interview prep',
-              color: 'from-pink-500 to-pink-600'
-            }
-          ].map((feature, idx) => (
-            <motion.div
-              key={idx}
-              className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all border border-white/50"
-              whileHover={{ y: -8, scale: 1.02 }}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.9 + idx * 0.1 }}
+        <div className="text-center max-w-5xl mx-auto relative z-20">
+          {/* Badge */}
+          <motion.div
+            className="inline-flex items-center gap-2 bg-gray-900/5 backdrop-blur-md border border-gray-900/10 rounded-full px-5 py-2 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <span className="text-sm font-medium tracking-wide bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+              AI-powered career coaching
+            </span>
+          </motion.div>
+
+          {/* Main Headline */}
+          <div className="overflow-hidden mb-6">
+            <motion.h1
+              className="text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 leading-[0.95] tracking-tight"
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
             >
-              <div className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center text-white mb-5 shadow-lg`}>
-                {feature.icon}
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">{feature.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-
-      {/* Expertise Section */}
-      <div className="relative z-10 container mx-auto px-6 py-20">
-        <motion.div
-          className="max-w-4xl mx-auto bg-white/70 backdrop-blur-sm rounded-3xl p-12 shadow-xl border border-white/50"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-              Powered by Years of Recruiting Expertise
-            </h2>
-            <p className="text-xl text-gray-600">
-              Our platform combines cutting-edge technology with insights from senior recruiters who've helped thousands land their dream jobs
-            </p>
+              Stuck? Find your next move.
+              <span className="block bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Personalised career roadmaps
+              </span>
+              in minutes
+            </motion.h1>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 mt-8">
-            {[
-              { number: '10+', label: 'Years of Experience' },
-              { number: '5000+', label: 'Careers Advanced' },
-              { number: '500+', label: 'Top Companies' }
-            ].map((stat, idx) => (
-              <motion.div
-                key={idx}
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
+
+          {/* Subtitle */}
+          <motion.p
+            className="text-xl md:text-2xl text-gray-900/90 mb-12 font-light leading-relaxed max-w-3xl mx-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+          >
+            Tell Pivotr your role and goal, get the roadmap, the milestones, and an AI coach that keeps you moving.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+          >
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+              <button
+                onClick={onGetStarted}
+                className="inline-flex items-center gap-2 relative group bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-all duration-300 text-lg px-10 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl"
               >
-                <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
+                <span className="relative z-10 flex items-center gap-2">
+                  Get Started
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mt-6">
+              🚀 Start your career transformation today with personalised AI coaching.
+            </p>
+          </motion.div>
 
-      {/* How It Works Section */}
-      <div className="relative z-10 container mx-auto px-6 py-20">
+          {/* Scroll Indicator */}
+          <motion.div
+            className="mt-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.9 }}
+          >
+            <a href="#about" className="flex flex-col items-center text-gray-500 hover:text-gray-900 transition-colors duration-300">
+              <span className="text-xs uppercase tracking-widest mb-2">Discover</span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </a>
+          </motion.div>
+        </div>
+      </main>
+
+      {/* Georgie Testimonial Section */}
+      <section className="px-6 md:px-8 lg:px-12 -mt-12 md:-mt-20 relative z-30">
         <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          className="max-w-5xl mx-auto bg-gray-900/5 backdrop-blur-lg border border-gray-900/10 rounded-3xl p-8 md:p-12 shadow-lg"
+          initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            How It Works
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Three simple steps to accelerate your career growth
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center md:gap-10">
+            <div className="shrink-0 mb-6 md:mb-0">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg" />
+            </div>
+            <div className="space-y-4 text-gray-800/80">
+              <p className="text-lg md:text-xl leading-relaxed">
+                "I've spent the last decade helping ambitious people make bold moves before they felt ready. Pivotr is everything I wish they'd had—clarity, coaching and momentum in one place."
+              </p>
+              <p className="text-sm uppercase tracking-widest text-gray-600">
+                Georgie Hubbard · Co-founder of Pivotr & Author of The Bold Move
+              </p>
+            </div>
+          </div>
         </motion.div>
+      </section>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {[
-            {
-              step: '01',
-              title: 'Share Your Goals',
-              desc: 'Tell us about your career aspirations, current skills, and where you want to go',
-              icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-              )
-            },
-            {
-              step: '02',
-              title: 'Get Expert Insights',
-              desc: 'Receive personalized recommendations, skill gaps analysis, and actionable advice from our system',
-              icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              )
-            },
-            {
-              step: '03',
-              title: 'Take Action',
-              desc: 'Follow your customized roadmap and track progress with ongoing support',
-              icon: (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              )
-            }
-          ].map((item, idx) => (
+      {/* Product Overview Section */}
+      <div className="relative z-10 py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">See Pivotr turn uncertainty into momentum</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                title: 'Understand strengths, gaps, blockers',
+                desc: 'Get clarity on where you are and what\'s holding you back'
+              },
+              {
+                title: 'Preview phased career roadmaps',
+                desc: 'See your personalized path forward with clear milestones'
+              },
+              {
+                title: 'AI mentor accountability',
+                desc: 'Stay on track with consistent guidance and support'
+              }
+            ].map((feature, idx) => (
+              <motion.div
+                key={idx}
+                className="bg-white rounded-xl p-8 shadow-lg"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* How it Works Section */}
+      <div className="relative z-10 bg-gradient-to-b from-purple-50/30 to-white py-24">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
             <motion.div
-              key={idx}
-              className="relative"
-              initial={{ opacity: 0, y: 30 }}
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.2 }}
             >
-              <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 text-8xl font-bold text-purple-100 -mr-4 -mt-4">
-                  {item.step}
-                </div>
-                <div className="relative z-10">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center text-white mb-4">
-                    {item.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-3">{item.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-              {idx < 2 && (
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">How it works</h2>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  number: '01',
+                  title: 'Set your pivot',
+                  desc: 'Choose your path: Pivot Out (new career), Pivot Up (promotion), or Pivot Project (side hustle)'
+                },
+                {
+                  number: '02',
+                  title: 'Discover your roadmap',
+                  desc: 'Get a phased, personalized plan tailored to your goals and current situation'
+                },
+                {
+                  number: '03',
+                  title: 'Do the work with AI coach',
+                  desc: 'Take action on clear missions with ongoing AI mentorship and accountability'
+                }
+              ].map((step, idx) => (
                 <motion.div
-                  className="hidden md:block absolute top-1/2 -right-4 w-8 h-8"
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  key={idx}
+                  className="bg-white rounded-xl p-8 shadow-md"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
                 >
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="text-purple-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+                  <div className="text-6xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">{step.number}</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{step.desc}</p>
                 </motion.div>
-              )}
-            </motion.div>
-          ))}
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Use Cases Section */}
-      <div className="relative z-10 container mx-auto px-6 py-20">
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            Perfect For Everyone
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Whether you're starting out or leveling up, we've got you covered
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {[
-            { title: 'Students', desc: 'Plan your career path early', emoji: '🎓' },
-            { title: 'Job Seekers', desc: 'Land your dream role faster', emoji: '💼' },
-            { title: 'Career Changers', desc: 'Transition smoothly', emoji: '🔄' },
-            { title: 'Professionals', desc: 'Advance to the next level', emoji: '📈' }
-          ].map((item, idx) => (
-            <motion.div
-              key={idx}
-              className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 text-center"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: idx * 0.1 }}
-            >
-              <div className="text-5xl mb-3">{item.emoji}</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">{item.title}</h3>
-              <p className="text-gray-600 text-sm">{item.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="relative z-10 container mx-auto px-6 py-20">
-        <motion.div
-          className="max-w-4xl mx-auto bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl p-12 shadow-2xl text-center text-white"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">Ready to Transform Your Career?</h2>
-          <p className="text-xl mb-8 opacity-90">Join thousands of professionals advancing their careers with expert guidance</p>
-          <motion.button
-            onClick={onGetStarted}
-            className="px-10 py-4 bg-white text-purple-600 font-bold rounded-full shadow-xl text-lg"
-            whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}
-            whileTap={{ scale: 0.95 }}
+      {/* Pivot Pathways Section */}
+      <div className="relative z-10 py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
           >
-            Get Started - It's Free →
-          </motion.button>
-        </motion.div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Choose your pivot</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                id: 'out',
+                title: 'Pivot Out',
+                subtitle: 'New career',
+                desc: 'Transition to a completely new industry or role',
+                phases: [
+                  { name: 'Foundation', desc: 'Build core transferable skills and explore new fields' },
+                  { name: 'Skill Building', desc: 'Develop technical and industry-specific capabilities' },
+                  { name: 'Positioning', desc: 'Create portfolio, network, and establish credibility' },
+                  { name: 'Transition', desc: 'Land your first role and successfully onboard' }
+                ]
+              },
+              {
+                id: 'up',
+                title: 'Pivot Up',
+                subtitle: 'Promotion',
+                desc: 'Advance in your current field to the next level',
+                phases: [
+                  { name: 'Assessment', desc: 'Identify gaps between current role and target position' },
+                  { name: 'Skill Development', desc: 'Build leadership and strategic capabilities' },
+                  { name: 'Visibility', desc: 'Demonstrate impact and build executive presence' },
+                  { name: 'Advancement', desc: 'Secure promotion and succeed in new role' }
+                ]
+              },
+              {
+                id: 'project',
+                title: 'Pivot Project',
+                subtitle: 'Side hustle',
+                desc: 'Build something meaningful alongside your career',
+                phases: [
+                  { name: 'Ideation', desc: 'Validate your idea and find product-market fit' },
+                  { name: 'MVP Development', desc: 'Build minimum viable product and test with users' },
+                  { name: 'Growth', desc: 'Scale audience, revenue, and operational systems' },
+                  { name: 'Sustainability', desc: 'Create sustainable income and manage both careers' }
+                ]
+              }
+            ].map((path, idx) => (
+              <motion.div
+                key={idx}
+                className={`rounded-xl p-8 shadow-lg border cursor-pointer transition-all duration-300 ${
+                  selectedPivot === path.id
+                    ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white border-purple-500'
+                    : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100 hover:shadow-xl hover:scale-105'
+                }`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                onClick={() => setSelectedPivot(selectedPivot === path.id ? null : path.id)}
+              >
+                <h3 className={`text-2xl font-bold mb-2 ${selectedPivot === path.id ? 'text-white' : 'text-gray-900'}`}>
+                  {path.title}
+                </h3>
+                <p className={`text-lg font-semibold mb-3 ${selectedPivot === path.id ? 'text-white/90' : 'text-purple-600'}`}>
+                  {path.subtitle}
+                </p>
+                <p className={`leading-relaxed mb-4 ${selectedPivot === path.id ? 'text-white/80' : 'text-gray-600'}`}>
+                  {path.desc}
+                </p>
+
+                <AnimatePresence>
+                  {selectedPivot === path.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-6 pt-6 border-t border-white/20">
+                        <h4 className="text-lg font-bold mb-4 text-white">Roadmap Phases:</h4>
+                        <div className="space-y-3">
+                          {path.phases.map((phase, phaseIdx) => (
+                            <div key={phaseIdx} className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                                {phaseIdx + 1}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-white">{phase.name}</div>
+                                <div className="text-sm text-white/70">{phase.desc}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onGetStarted()
+                          }}
+                          className="mt-6 w-full bg-white text-purple-600 font-semibold px-6 py-3 rounded-lg hover:bg-gray-100 transition-all"
+                        >
+                          Start This Path →
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {selectedPivot !== path.id && (
+                  <div className="text-sm text-purple-600 font-medium mt-4">
+                    Click to see roadmap phases →
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Floating particles */}
-      {particles.map((particle, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 bg-purple-400/40 rounded-full pointer-events-none"
-          style={{
-            left: `${particle.left}%`,
-            top: `${particle.top}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: particle.duration,
-            repeat: Infinity,
-            delay: particle.delay,
-          }}
-        />
-      ))}
+      {/* Pricing Section */}
+      <div className="relative z-10 bg-gradient-to-b from-purple-50/30 to-white py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-semibold mb-4">
+              Founding Member Pricing
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Start your pivot today</h2>
+            <p className="text-xl text-gray-600">3-day free trial · Cancel anytime</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                name: 'Pivotr Pro – Foundation',
+                price: '$15',
+                yearlyPrice: '$180',
+                period: 'per month',
+                features: ['Foundation phase roadmap', 'AI career assessment', 'Skill gap analysis', 'Weekly AI check-ins', 'Access to Skill Sprints Library'],
+                cta: 'Start 3-Day Free Trial'
+              },
+              {
+                name: 'Pivotr Pro',
+                price: '$24',
+                yearlyPrice: '$288',
+                period: 'per month',
+                features: ['Complete phased roadmap', 'Everything in Foundation', 'Unlimited AI mentorship', 'Priority support', 'Early access to new features'],
+                cta: 'Start 3-Day Free Trial',
+                popular: true
+              }
+            ].map((plan, idx) => (
+              <motion.div
+                key={idx}
+                className={`bg-white rounded-2xl p-8 shadow-xl ${plan.popular ? 'border-2 border-purple-500 relative' : 'border border-gray-200'}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                    Most Popular
+                  </div>
+                )}
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{plan.name}</h3>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+                    <span className="text-gray-600">/ {plan.period}</span>
+                  </div>
+                  <p className="text-sm text-gray-500">{plan.yearlyPrice}/yr after trial</p>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={onGetStarted}
+                  className={`w-full py-4 font-semibold rounded-lg transition-all ${
+                    plan.popular
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 text-white shadow-lg'
+                      : 'bg-gray-900 hover:bg-gray-800 text-white'
+                  }`}
+                >
+                  {plan.cta}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <div className="relative z-10 py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
+          </motion.div>
+
+          <div className="max-w-3xl mx-auto space-y-6">
+            {[
+              { q: 'What is Pivotr?', a: 'Pivotr is an AI-powered career coaching platform that creates personalized roadmaps to help you make your next career move with confidence.' },
+              { q: 'Who is Pivotr for?', a: 'Pivotr is for anyone looking to make a career change, get promoted, or start a side project. Whether you\'re early career or experienced, we help you create a clear path forward.' },
+              { q: 'How do I get started?', a: 'Start with our 3-day free trial. You\'ll complete an assessment, receive your personalized roadmap, and get access to your AI career coach.' },
+              { q: 'What\'s included in the free trial?', a: 'The 3-day trial gives you full access to create your roadmap, understand your strengths and gaps, and start working with your AI mentor.' },
+              { q: 'How does the AI work?', a: 'Our AI analyzes your background, goals, and skills to create a phased roadmap tailored to you. It acts as your accountability partner, helping you stay on track with regular check-ins.' },
+              { q: 'Can I cancel anytime?', a: 'Yes! You can cancel your subscription at any time with no penalties or long-term commitments.' }
+            ].map((faq, idx) => (
+              <motion.div
+                key={idx}
+                className="bg-white rounded-xl p-6 shadow-md border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+              >
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{faq.q}</h3>
+                <p className="text-gray-600">{faq.a}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Final CTA */}
+      <div className="relative z-10 bg-gradient-to-b from-purple-50/30 to-white py-24">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="max-w-4xl mx-auto text-center bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-16 shadow-2xl"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Ready to make your bold move?</h2>
+            <p className="text-xl text-white/90 mb-8">Start your 3-day free trial today. No credit card required.</p>
+            <button
+              onClick={onGetStarted}
+              className="px-10 py-4 bg-white hover:bg-gray-100 text-purple-600 font-bold rounded-lg transition-all text-lg shadow-xl"
+            >
+              Start Free Trial
+            </button>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="relative z-10 bg-gray-900 py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h4 className="text-white font-bold text-xl mb-4">Pivotr</h4>
+              <p className="text-gray-400 text-sm">Make your bold move with AI-powered career coaching</p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li className="hover:text-white cursor-pointer transition">Features</li>
+                <li className="hover:text-white cursor-pointer transition">Pricing</li>
+                <li className="hover:text-white cursor-pointer transition">FAQ</li>
+                <li className="hover:text-white cursor-pointer transition">Roadmap</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li className="hover:text-white cursor-pointer transition">About</li>
+                <li className="hover:text-white cursor-pointer transition">Blog</li>
+                <li className="hover:text-white cursor-pointer transition">Community</li>
+                <li className="hover:text-white cursor-pointer transition">Contact</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li className="hover:text-white cursor-pointer transition">Privacy Policy</li>
+                <li className="hover:text-white cursor-pointer transition">Terms of Service</li>
+                <li className="hover:text-white cursor-pointer transition">Cookie Policy</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
+            <p>© 2026 Pivotr. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -590,16 +740,11 @@ function ChatInterface({ messages, message, setMessage, sendMessage, loading, is
               </svg>
             </motion.button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
               <div>
-                <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Career Mentor
+                <h2 className="text-xl font-bold text-gray-900">
+                  Pivotr
                 </h2>
-                <p className="text-sm text-gray-500">Expert guidance, personalized for you</p>
+                <p className="text-sm text-gray-500">AI Career Coach</p>
               </div>
             </div>
           </div>
@@ -617,8 +762,8 @@ function ChatInterface({ messages, message, setMessage, sendMessage, loading, is
                 animate={{ opacity: 1, y: 0 }}
               >
                 <div className="text-6xl mb-4">👋</div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Hi! I'm your Career Mentor</h3>
-                <p className="text-gray-600 mb-6">Ask me anything about your career path, skills, or job search</p>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Hi! Let's find your next move</h3>
+                <p className="text-gray-600 mb-6">Ask me about your career, skills, or where you want to go</p>
 
                 {/* Quick suggestions */}
                 <div className="flex flex-wrap gap-3 justify-center max-w-2xl mx-auto">
@@ -660,10 +805,10 @@ function ChatInterface({ messages, message, setMessage, sendMessage, loading, is
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] p-5 rounded-3xl shadow-lg ${
+                    className={`max-w-[80%] p-5 rounded-2xl shadow-md ${
                       msg.role === 'user'
-                        ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white'
-                        : 'bg-white text-gray-800'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        : 'bg-white text-gray-800 border border-gray-200'
                     }`}
                   >
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -734,9 +879,9 @@ function ChatInterface({ messages, message, setMessage, sendMessage, loading, is
             <motion.button
               onClick={sendMessage}
               disabled={loading || !message.trim()}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold px-8 py-4 rounded-full transition-all shadow-lg disabled:cursor-not-allowed"
-              whileHover={{ scale: loading || !message.trim() ? 1 : 1.05 }}
-              whileTap={{ scale: loading || !message.trim() ? 1 : 0.95 }}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 disabled:opacity-50 text-white font-semibold px-8 py-4 rounded-lg transition-all shadow-lg disabled:cursor-not-allowed"
+              whileHover={{ scale: loading || !message.trim() ? 1 : 1.02 }}
+              whileTap={{ scale: loading || !message.trim() ? 1 : 0.98 }}
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -785,7 +930,7 @@ function AuthModal({ onLogin, onRegister, onClose }: any) {
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", duration: 0.5 }}
       >
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6">
           {isLogin ? 'Welcome Back' : 'Get Started'}
         </h2>
 
@@ -798,7 +943,7 @@ function AuthModal({ onLogin, onRegister, onClose }: any) {
               placeholder="Full Name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               required
             />
           )}
@@ -807,7 +952,7 @@ function AuthModal({ onLogin, onRegister, onClose }: any) {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+            className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             required
           />
           <input
@@ -815,13 +960,13 @@ function AuthModal({ onLogin, onRegister, onClose }: any) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+            className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             required
           />
 
           <motion.button
             type="submit"
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 text-white font-semibold px-6 py-3 rounded-lg transition-all shadow-lg"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

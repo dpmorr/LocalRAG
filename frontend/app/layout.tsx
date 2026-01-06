@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'AI Career Mentor',
-  description: 'Your personalized AI-powered career guidance platform',
+  title: 'Pivotr - AI-powered career coaching',
+  description: 'Stuck? Find your next move. Personalised career roadmaps in minutes with AI-powered coaching.',
 }
 
 export default function RootLayout({

@@ -8,14 +8,20 @@ CREATE SCHEMA IF NOT EXISTS profiles;
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgvector";
+-- pgvector extension
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS "pgvector";
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'pgvector extension not available, will install manually';
+END$$;
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- For BM25 text search
 
 -- Grant permissions
-GRANT ALL ON SCHEMA auth TO career_mentor;
-GRANT ALL ON SCHEMA chat TO career_mentor;
-GRANT ALL ON SCHEMA knowledge TO career_mentor;
-GRANT ALL ON SCHEMA profiles TO career_mentor;
+GRANT ALL ON SCHEMA auth TO localrag;
+GRANT ALL ON SCHEMA chat TO localrag;
+GRANT ALL ON SCHEMA knowledge TO localrag;
+GRANT ALL ON SCHEMA profiles TO localrag;
 
 -- Success message
 DO $$
